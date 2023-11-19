@@ -63,8 +63,10 @@ class LiquorStoreHandler(BaseRequestHandler):
         self.request.close()
 
 # Crear el servidor
-liquor_server = ThreadingTCPServer(("127.0.0.1", 7559), LiquorStoreHandler)
+dir_ip = "127.0.0.1"
+puerto = 7559
+# Inicializar servidor
+liquor_server = ThreadingTCPServer((dir_ip, puerto), LiquorStoreHandler)
 liquor_server.sockets = []  # Lista para almacenar los sockets de los clientes
-
-print("LIQUOR-STORE server started on port %s" % 7559)
+print("LIQUOR-STORE server started on port %s" % puerto)
 liquor_server.serve_forever()
