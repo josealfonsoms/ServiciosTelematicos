@@ -16,6 +16,7 @@ class LiquorStoreHandler(BaseRequestHandler):
 
     def process_purchase(self, user_credentials, liquor_code):
         # Lógica simulada de conexión con el servidor BANK para verificar credenciales y saldo
+        #HACIENDO CAMBIOS EN SERVIDOR
         # Aquí se realizaría la lógica real de conexión con el servidor BANK
         # bank_approved = check_with_bank(user_credentials, liquor_code, inventory[liquor_code]["cost_per_unit"])
 
@@ -52,6 +53,7 @@ class LiquorStoreHandler(BaseRequestHandler):
                 # Lógica para procesar la compra
                 response = self.process_purchase(*decoded_data[1:])  # Simplemente para ejemplificar
                 self.request.sendall(response.encode())
+
             elif command == "exit":
                 msg = "Client left " + str(self.client_address) + "\r\n"
                 self.broadcast_string(msg, self.request)
