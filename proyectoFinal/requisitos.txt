@@ -1,0 +1,28 @@
+
+FUNCIONALIDADES SERVIDOR "LIQUOR-STORE"
+Almacenar en una estructura de datos (diccionario, base de datos, vector), el inventario de licores disponibles para la venta. Dicha DB deberá contener la siguiente información: código, licor (nombre comercial), procedencia (DNS country code), unidades disponibles y costo x unidad.
+Nota: Por simplicidad este servidor tendrá de manera inicial preconfigurada una DB con 5 licores de su preferencia. El valor por unidad debe ser coherente con su costo actual, y el stock no será superior a 10 unidades.
+
+Proveer, cuando un usuario lo requiera, un listado de todos los licores con su código, nombre, procedencia, unidades disponibles y costo. En este listado también se deberá indicar el número de usuarios conectados al servidor al momento de la consulta.
+• Tramitar las peticiones de adquisición de licor (compra), por parte de los usuarios. Dicho proceso integra las siguientes operaciones:
+‣ Establecer una pasarela de pagos (conexión UDP cifrada) con el servidor BANK para verificar las credenciales del usuario (número de cuenta y contraseña), así como su saldo.
+‣ Si el servidor BANK no aprobó la compra por saldo insuficiente o falló en la autenticación de credenciales, notificar al usuario esta condición y finalizar el trámite de compra.
+‣ Si el servidor BANK aprobó la compra proceder a actualizar el inventario en la DB y enviar un mensaje al usuario (que tal un ASCII-ART), indicando que ha adquirido el producto solicitado
+Nota: Solo se tramitarán solicitudes de compra de un solo tipo de licor
+
+FUNCIONALIDADES DEL SERVIDOR "BANK"
+Almacenar en una estructura de datos (diccionario, base de datos, vector), la
+información relacionada con sus clientes: cuenta, nombre, contraseña, y saldo.
+Nota: Por simplicidad este servidor tendrá de manera inicial preconfigurada esta DB con 3 usuarios definidos por usted. El saldo inicial de cada usuario debe permitir comprar una botella de cada una de las referencias registradas en el servidor LIQUORSTORE.
+
+Proveer al usuario, previa validación de las credenciales, la posibilidad de consultar, incrementar (consignar) o decrementar (retirar) su saldo en una única sesión. En caso de error en el proceso de autenticación, notificar al usuario dicha situación.
+Nota: Tenga en cuenta que los procesos de retiro y consignación implican una actualización inmediata en la DB. El proceso de retiro o consignación simplemente se evidenciará con un mensaje en la pantalla del usuario.
+
+Tramitar las peticiones de adquisición de licor (compra), por parte del servidor LIQUORSTORE. Dicho proceso integra las siguientes operaciones:
+‣ Establecer una pasarela de pagos (conexión UDP cifrada) con el servidor LIQUORSTORE para recibir las credenciales del usuario (número de cuenta y contraseña), así como el valor total de la compra.
+‣ Si las credenciales de autenticación son incorrectas o el saldo es insuficiente enviar un mensaje de error al servidor LIQUORSTORE.
+‣ Si las credenciales de autenticación son correctas y el saldo es suficiente para realizar la compra solicitada, proceder a actualizar el nuevo saldo del usuario en la DB y enviar un mensaje de aprobación de compra al servidor LIQUORSTORE.
+
+FUNCIONALIDADES DEL CLIENTE 
+• Establecer conexión al servidor LIQUORSTORE para realizar las tareas de consulta y/o compra.
+• Establecer conexión con el servidor BANK para realizar las operaciones de consulta, retiro y/o consignación.
