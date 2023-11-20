@@ -1,3 +1,4 @@
+import socket
 from socketserver import ThreadingTCPServer, BaseRequestHandler
 
 # Datos simulados de inventario de licores
@@ -7,30 +8,12 @@ inventory = {
     # ... Otros licores
 }
 
-class LiquorStoreHandler(BaseRequestHandler):
+class LiquorStore(BaseRequestHandler):
     def broadcast_string(self, b_msg, skip_socket):
         for socket in self.server.sockets:
             if socket != self.request and socket != skip_socket:
                 socket.send(b_msg.encode())
         print(b_msg)
-
-    def process_purchase(self, user_credentials, liquor_code):
-        # Lógica simulada de conexión con el servidor BANK para verificar credenciales y saldo
-        #HACIENDO CAMBIOS EN SERVIDOR
-        # Aquí se realizaría la lógica real de conexión con el servidor BANK
-        # bank_approved = check_with_bank(user_credentials, liquor_code, inventory[liquor_code]["cost_per_unit"])
-
-        bank_approved = True  # Suponemos aprobación para simplificar
-
-        if bank_approved:
-            liquor = inventory.get(liquor_code)
-            if liquor and liquor["units"] > 0:
-                liquor["units"] -= 1
-                return "¡Compra exitosa! Has adquirido el licor."
-            else:
-                return "El licor no está disponible en este momento."
-        else:
-            return "La compra fue rechazada por el banco debido a saldo insuficiente o credenciales inválidas."
 
     def handle(self):
         self.server.sockets.append(self.request)
@@ -59,16 +42,33 @@ class LiquorStoreHandler(BaseRequestHandler):
                 self.broadcast_string(msg, self.request)
                 self.server.sockets.remove(self.request)
                 break
+
+            elif command == "bank":
+                # Recolectar el mensaje escrito por el cliente
+                message = ' '.join(decoded_data[1:]).lower()
+                
+                # Enviar el mensaje al servidor BANK
+                bank_udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                bank_server_address = ("127.0.0.1", 3458)  # Dirección y puerto del servidor BANK
+                bank_udp_socket.sendto(message.encode(), bank_server_address)
+
+                # Recibir la respuesta del servidor BANK
+                response, _ = bank_udp_socket.recvfrom(1024)
+                self.request.sendall(response)
+                bank_udp_socket.close()
+                
             else:
-                self.request.sendall("Invalid command".encode())
+                self.request.sendall("Comando invalido".encode())
+
+
 
         self.request.close()
 
-# Crear el servidor
+# Datos del servidor LiquorStore
 dir_ip = "127.0.0.1"
 puerto = 7559
 # Inicializar servidor
-liquor_server = ThreadingTCPServer((dir_ip, puerto), LiquorStoreHandler)
+liquor_server = ThreadingTCPServer((dir_ip, puerto), LiquorStore)
 liquor_server.sockets = []  # Lista para almacenar los sockets de los clientes
 print("LIQUOR-STORE server started on port %s" % puerto)
 liquor_server.serve_forever()
