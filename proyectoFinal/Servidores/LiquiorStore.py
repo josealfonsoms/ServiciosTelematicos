@@ -1,6 +1,11 @@
 import socket
 from socketserver import ThreadingTCPServer, BaseRequestHandler
 
+# Datos del servidor LiquorStore
+dir_ip = "127.0.0.1"
+puerto = 7559
+
+bank_server_address = ("127.0.0.1", 3458)  # Dirección y puerto del servidor BANK
 # Datos simulados de inventario de licores
 inventory = {
     1: {"code": 1, "name": "Licor1", "origin": "US", "units": 10, "cost_per_unit": 20.0},
@@ -49,14 +54,13 @@ class LiquorStore(BaseRequestHandler):
                 
                 # Enviar el mensaje al servidor BANK
                 bank_udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                bank_server_address = ("127.0.0.1", 3458)  # Dirección y puerto del servidor BANK
                 bank_udp_socket.sendto(message.encode(), bank_server_address)
 
                 # Recibir la respuesta del servidor BANK
                 response, _ = bank_udp_socket.recvfrom(1024)
                 self.request.sendall(response)
                 bank_udp_socket.close()
-                
+
             else:
                 self.request.sendall("Comando invalido".encode())
 
@@ -64,9 +68,6 @@ class LiquorStore(BaseRequestHandler):
 
         self.request.close()
 
-# Datos del servidor LiquorStore
-dir_ip = "127.0.0.1"
-puerto = 7559
 # Inicializar servidor
 liquor_server = ThreadingTCPServer((dir_ip, puerto), LiquorStore)
 liquor_server.sockets = []  # Lista para almacenar los sockets de los clientes
