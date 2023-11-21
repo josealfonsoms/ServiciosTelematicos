@@ -18,7 +18,6 @@ class LiquorStore(BaseRequestHandler):
     def handle(self):
         self.server.sockets.append(self.request)
         self.request.send(b"You're connected to the LIQUOR-STORE server\r\n")
-        host, port = self.client_address
         msg = "\r\n" + "Client joined " + str(self.client_address) + "\r\n"
         self.broadcast_string(msg, self.request)
         
@@ -46,17 +45,19 @@ class LiquorStore(BaseRequestHandler):
             elif command == "bank":
                 # Recolectar el mensaje escrito por el cliente
                 message = ' '.join(decoded_data[1:]).lower()
-                
-                # Enviar el mensaje al servidor BANK
+
+                # Enviar el mensaje al servidor BANK a través de UDP
                 bank_udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                bank_server_address = ("127.0.0.1", 3458)  # Dirección y puerto del servidor BANK
+                bank_server_address = ("127.0.0.1", 8888)  # Dirección y puerto del servidor BANK
                 bank_udp_socket.sendto(message.encode(), bank_server_address)
 
                 # Recibir la respuesta del servidor BANK
                 response, _ = bank_udp_socket.recvfrom(1024)
-                self.request.sendall(response)
+                self.request.sendall(response)  # Enviar la respuesta al cliente (LiquorStore)
+
+                # Cerrar el socket UDP del servidor BANK
                 bank_udp_socket.close()
-                
+
             else:
                 self.request.sendall("Comando invalido".encode())
 
@@ -65,10 +66,9 @@ class LiquorStore(BaseRequestHandler):
         self.request.close()
 
 # Datos del servidor LiquorStore
-dir_ip = "127.0.0.1"
-puerto = 7559
+LiquorStore_address = ("127.0.0.1", 7559)
 # Inicializar servidor
-liquor_server = ThreadingTCPServer((dir_ip, puerto), LiquorStore)
+liquor_server = ThreadingTCPServer((LiquorStore_address), LiquorStore)
 liquor_server.sockets = []  # Lista para almacenar los sockets de los clientes
-print("LIQUOR-STORE server started on port %s" % puerto)
+print("LIQUOR-STORE server started on port %s" % LiquorStore_address[1])
 liquor_server.serve_forever()

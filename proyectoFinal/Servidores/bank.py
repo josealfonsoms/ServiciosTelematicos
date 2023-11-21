@@ -1,11 +1,8 @@
 import socket
-from socketserver import ThreadingTCPServer, BaseRequestHandler
+from socketserver import ThreadingTCPServer, ThreadingUDPServer, BaseRequestHandler
 
-# Datos del servidor bank
-dir_ip = "127.0.0.1"
-puerto = 3458
-
-liquor_store_address = ("127.0.0.1", 7559)  # Dirección y puerto del servidor LiquorStore
+bank_server_address = ("127.0.0.1", 3458)   # Dirección y puerto del servidor bank
+liquor_store_address = ("127.0.0.1", 8888)  # Dirección y puerto del servidor LiquorStore
 
 class BankServerHandler(BaseRequestHandler):
     accounts = {
@@ -15,19 +12,22 @@ class BankServerHandler(BaseRequestHandler):
     }
 
     def handle(self):
-        bank_udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        bank_udp_socket.bind(("127.0.0.1", 3458))  # Asignar el puerto para la comunicación UDP
-
+        print("Connection from ", str(self.client_address))
         while True:
-            data, addr = bank_udp_socket.recvfrom(1024)
-            message = data.decode().upper()  # Convertir el mensaje a mayúsculas
+            data = self.request.recv(1024)
+            self.request.send(data.upper())
+        self.request.close()
 
-            # Enviar el mensaje en mayúsculas de vuelta al servidor "LIQUOR-STORE"
-            bank_udp_socket.sendto(message.encode(), liquor_store_address)
-
-        bank_udp_socket.close()
+class LiquiorStoreHandler(BaseRequestHandler):
+    def handle(self):
+        print("Connection from ", str(self.client_address))
+        data, conn = self.request
+        conn.sendto(data.upper(), self.client_address)
 
 # Inicializar servidor
-bank_server = ThreadingTCPServer((dir_ip, puerto), BankServerHandler)
-print("BANK server started on port %s" % puerto)
+bank_server = ThreadingTCPServer((bank_server_address), BankServerHandler)
+liquorStore_server = ThreadingUDPServer((liquor_store_address), LiquiorStoreHandler)
+print("Se ha iniciado el servidor BANK TCP en el puerto %s" % bank_server_address[1])
+print("Se ha iniciado el servidor LIQUORSTORE UDP en el puerto %s" % liquor_store_address[1])
 bank_server.serve_forever()
+liquorStore_server.serve_forever()
