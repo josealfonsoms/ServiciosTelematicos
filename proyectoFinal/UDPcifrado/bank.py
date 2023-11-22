@@ -18,7 +18,7 @@ class BankHandler(socketserver.BaseRequestHandler):
     @staticmethod
     def send_to_liquor_store(message):
         liquorstore_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        liquorstore_socket.sendto(message, ('127.0.0.1', 8080))
+        liquorstore_socket.sendto(message, ('127.0.0.1', 7556))
         liquorstore_socket.close()
 
     def handle(self):
@@ -29,7 +29,7 @@ class BankHandler(socketserver.BaseRequestHandler):
             print("LiquorStore:", decrypted_message)
 
 if __name__ == "__main__":
-    HOST, PORT = "127.0.0.1", 9090
+    HOST, PORT = "127.0.0.1", 3555
     server = socketserver.UDPServer((HOST, PORT), BankHandler)
 
     server_thread = threading.Thread(target=server.serve_forever)

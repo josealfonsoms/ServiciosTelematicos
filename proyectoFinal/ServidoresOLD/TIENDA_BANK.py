@@ -127,21 +127,14 @@ class LiquorStoreHandler(BaseRequestHandler):
 
                 elif command == "buy":
                     self.request.sendall(b"You're about to make a purchase. Please log in to your bank account.\r\n")
-                    self.request.sendall(b"Enter your username:\r\n")
+                    self.request.sendall(b"Enter your username:")
                     username = self.request.recv(1024).decode().strip()
-                    self.request.sendall(b"Now enter your password:\r\n")
+                    self.request.sendall(b"Now enter your password:")
                     password = self.request.recv(1024).decode().strip()
                     user_credentials = [username, password]
 
                     bank_handler = BankHandler()
                     authenticated = bank_handler.authenticate_client(username, password)
-
-                    if authenticated:
-                        client = bank_handler.clients_db.get(username)
-                        self.request.sendall(f"Hello {client['name']}\r\n".encode())
-                        self.request.sendall(b"Ahora puedes ver tu saldo, retirar o consignar.\r\n")
-                    else:
-                        self.request.sendall(b"Credenciales invalidas, intenta de nuevo o exit para salir\r\n")
 
                 elif command == "exit":
                     msg = "Client left " + str(self.client_address) + "\r\n"
@@ -149,9 +142,13 @@ class LiquorStoreHandler(BaseRequestHandler):
                     self.server.sockets.remove(self.request)
                     break
                 else:
-                    self.request.sendall(b"Comando invalido, porfavor digital list, buy, o exit para salir\r\n")
+                    self.request.sendall(b"Comando invalido, porfavor digitar list, buy, o exit para salir\r\n")
 
             else:
+                client = bank_handler.clients_db.get(username)
+                self.request.sendall(f"Hello {client['name']}".encode())
+                self.request.sendall(b"Ahora puedes ver tu saldo, retirar o consignar.")
+
                 if command == "list":
                     # Imprimir la lista de licores de manera organizada
                     response = "\r\n".join([f"{key}: {value}" for key, value in inventory.items()]) + "\r\n"
