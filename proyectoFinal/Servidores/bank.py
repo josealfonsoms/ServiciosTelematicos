@@ -1,11 +1,8 @@
-import socket
 from socketserver import ThreadingUDPServer, BaseRequestHandler
 
-# Datos del servidor bank
-dir_ip = "127.0.0.1"
-puerto = 3458
-
-liquor_store_address = ("127.0.0.1", 7558)  # Dirección y puerto del servidor LiquorStore
+# Datos de servidores
+bank_address = ("127.0.0.1", 3458)              # Dirección y puerto UDP del servidor Bank
+liquorStore_address = ("127.0.0.1", 7556)     # Dirección y puerto TCP del servidor LiquorStore
 
 class BankServerHandler(BaseRequestHandler):
     accounts = {
@@ -15,31 +12,34 @@ class BankServerHandler(BaseRequestHandler):
     }
 
     def handle(self):
-        data = self.request[0].strip()  # Datos recibidos
-        socket = self.request[1]  # Socket del cliente
+        data, conn = self.request  # Datos recibidos y socket del cliente
 
-        decoded_data = data.decode().split()
-
+        # Extraer usuario, contraseña y costo de los datos recibidos
+        decoded_data = data.strip().decode().split()
         usuario = decoded_data[0]
         contraseña = decoded_data[1]
         costo = int(decoded_data[2])  # Convertir a entero para comparaciones
-        print(usuario)
+        print(f'Usuario: {usuario}, Contraseña: {contraseña}')
+
         # Verificar las credenciales del usuario
         if usuario in self.accounts and contraseña == self.accounts[usuario]["contraseña"]:
             saldo_disponible = self.accounts[usuario]["saldo"]
+            print(f"Saldo disponible para {usuario}: {saldo_disponible}")
+            print(f"Monto a descontar para la compra: {costo}")
             if saldo_disponible >= costo:
-                # Si el usuario tiene saldo suficiente, enviar 'OK' al servidor LiquorStore
+                # Si el usuario tiene saldo suficiente
                 response = "OK"
-                self.request.sendto(response.encode(), liquor_store_address)
             else:
-                # Si el usuario no tiene saldo suficiente, enviar 'NO_DISPONIBLE'
-                response = "Saldo insuficiente"
-                self.request.sendto(response.encode(), liquor_store_address)
+                # Si el usuario no tiene saldo suficiente
+                response = "Bank: Saldo insuficiente"
         else:
-            # Si las credenciales no son válidas, enviar 'INVALIDO'
-            response = "Credenciales invalidas"
+            # Si las credenciales no son válidas
+            response = "Bank: Credenciales invalidas"
+        # Responder a LiquorStore
+        print(response) 
+        conn.sendto(response.encode(), liquorStore_address)
 
 # Inicializar servidor
-bank_server = ThreadingUDPServer((dir_ip, puerto), BankServerHandler)
-print("BANK server started on port %s" % puerto)
+bank_server = ThreadingUDPServer((bank_address), BankServerHandler)
+print("BANK server started on port %s" % bank_address[1])
 bank_server.serve_forever()

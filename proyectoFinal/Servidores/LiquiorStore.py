@@ -1,11 +1,11 @@
-from socket import *
 from socketserver import ThreadingTCPServer, BaseRequestHandler
+import threading
+from socket import *
 
-# Datos del servidor LiquorStore
-dir_ip = "127.0.0.1"
-puerto = 7554
+# Datos de Servidores
+liquorStore_address = ("127.0.0.1", 7556)    # Dirección y puerto del servidor LiquorStore
+bank_address = ("127.0.0.1", 3458)           # Dirección y puerto del servidor Bank
 
-bank_server_address = ("127.0.0.1", 3458)  # Dirección y puerto del servidor BANK
 # Datos simulados de inventario de licores
 inventory = {
     1: {"code": 1, "name": "Licor1", "origin": "US", "units": 10, "cost_per_unit": 20},
@@ -43,7 +43,6 @@ class LiquorStore(BaseRequestHandler):
                 self.request.sendall(response.encode())
 
             elif command == "buy":
-                # Lógica para procesar la compra
                 liquor_code = decoded_data[1] if len(decoded_data) > 1 else None
                 if (liquor_code):
                     costo = self.extraerprecio(liquor_code)
@@ -52,15 +51,21 @@ class LiquorStore(BaseRequestHandler):
                     username = self.request.recv(1024).decode().strip()
                     self.request.sendall(b"Now enter your password:")
                     password = self.request.recv(1024).decode().strip()
-                    user_credentials = f"{username} {password} {costo}".encode()
+                    user_credentials = f"{username} {password} {costo}"
+                    
+                    # Enviar al banco
                     bank_socket = socket(AF_INET, SOCK_DGRAM)
-                    bank_socket.sendto(user_credentials, ('127.0.0.1', 3458))
-                    data = self.request.recv(1024)
-                    if(data == "OK"):
-                        self.request.sendall(b"Usted posee saldo suficiente para comprar")
-                    else:
-                        self.request.sendall(b"Saldo insuficiente")
+                    bank_socket.sendto(user_credentials.encode(), (bank_address))
 
+                    # Recibir respuesta del banco
+                    response_bank, _ = bank_socket.recvfrom(1024)
+                    decoded_response_bank = response_bank.decode().strip()
+                    print(decoded_response_bank)
+
+                    if decoded_response_bank == "OK":
+                        self.request.sendall(b"Desea confirmar la compra?\r\n")
+                    else:
+                        self.request.sendall(b"Saldo insuficiente\r\n")
 
             elif command == "exit":
                 msg = "Client left " + str(self.client_address) + "\r\n"
@@ -71,12 +76,10 @@ class LiquorStore(BaseRequestHandler):
             else:
                 self.request.sendall("Comando invalido".encode())
 
-
-
         self.request.close()
 
 # Inicializar servidor
-liquor_server = ThreadingTCPServer((dir_ip, puerto), LiquorStore)
+liquor_server = ThreadingTCPServer((liquorStore_address), LiquorStore)
 liquor_server.sockets = []  # Lista para almacenar los sockets de los clientes
-print("LIQUOR-STORE server started on port %s" % puerto)
+print("LIQUOR-STORE server started on port %s" % liquorStore_address[1])
 liquor_server.serve_forever()
