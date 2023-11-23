@@ -1,15 +1,15 @@
-import socket
+from socket import *
 from socketserver import ThreadingTCPServer, BaseRequestHandler
 
 # Datos del servidor LiquorStore
 dir_ip = "127.0.0.1"
-puerto = 7559
+puerto = 7554
 
 bank_server_address = ("127.0.0.1", 3458)  # Dirección y puerto del servidor BANK
 # Datos simulados de inventario de licores
 inventory = {
-    1: {"code": 1, "name": "Licor1", "origin": "US", "units": 10, "cost_per_unit": 20.0},
-    2: {"code": 2, "name": "Licor2", "origin": "FR", "units": 8, "cost_per_unit": 25.0},
+    1: {"code": 1, "name": "Licor1", "origin": "US", "units": 10, "cost_per_unit": 20},
+    2: {"code": 2, "name": "Licor2", "origin": "FR", "units": 8, "cost_per_unit": 25},
     # ... Otros licores
 }
 
@@ -19,11 +19,16 @@ class LiquorStore(BaseRequestHandler):
             if socket != self.request and socket != skip_socket:
                 socket.send(b_msg.encode())
         print(b_msg)
+    
+    def extraerprecio(self, liquor_code):
+        liquor = inventory.get(int(liquor_code))
+        if (liquor):
+            costo = liquor["cost_per_unit"]
+            return costo
 
     def handle(self):
         self.server.sockets.append(self.request)
         self.request.send(b"You're connected to the LIQUOR-STORE server\r\n")
-        host, port = self.client_address
         msg = "\r\n" + "Client joined " + str(self.client_address) + "\r\n"
         self.broadcast_string(msg, self.request)
         
@@ -39,27 +44,29 @@ class LiquorStore(BaseRequestHandler):
 
             elif command == "buy":
                 # Lógica para procesar la compra
-                response = self.process_purchase(*decoded_data[1:])  # Simplemente para ejemplificar
-                self.request.sendall(response.encode())
+                liquor_code = decoded_data[1] if len(decoded_data) > 1 else None
+                if (liquor_code):
+                    costo = self.extraerprecio(liquor_code)
+                    self.request.sendall(b"You're about to make a purchase. Please log in to your bank account.\r\n")
+                    self.request.sendall(b"Enter your username:")
+                    username = self.request.recv(1024).decode().strip()
+                    self.request.sendall(b"Now enter your password:")
+                    password = self.request.recv(1024).decode().strip()
+                    user_credentials = f"{username} {password} {costo}".encode()
+                    bank_socket = socket(AF_INET, SOCK_DGRAM)
+                    bank_socket.sendto(user_credentials, ('127.0.0.1', 3458))
+                    data = self.request.recv(1024)
+                    if(data == "OK"):
+                        self.request.sendall(b"Usted posee saldo suficiente para comprar")
+                    else:
+                        self.request.sendall(b"Saldo insuficiente")
+
 
             elif command == "exit":
                 msg = "Client left " + str(self.client_address) + "\r\n"
                 self.broadcast_string(msg, self.request)
                 self.server.sockets.remove(self.request)
                 break
-
-            elif command == "bank":
-                # Recolectar el mensaje escrito por el cliente
-                message = ' '.join(decoded_data[1:]).lower()
-                
-                # Enviar el mensaje al servidor BANK
-                bank_udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                bank_udp_socket.sendto(message.encode(), bank_server_address)
-
-                # Recibir la respuesta del servidor BANK
-                response, _ = bank_udp_socket.recvfrom(1024)
-                self.request.sendall(response)
-                bank_udp_socket.close()
 
             else:
                 self.request.sendall("Comando invalido".encode())
