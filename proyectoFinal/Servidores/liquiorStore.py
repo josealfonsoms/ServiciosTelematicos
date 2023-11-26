@@ -4,32 +4,27 @@ from socket import *
 
 # Datos simulados de inventario de licores
 inventory = {
-    1: {"codigo": 1, "nombre": "Licor1", "origen": "US", "unidades": 10, "precio": 20},
-    2: {"codigo": 2, "nombre": "Licor2", "origen": "FR", "unidades": 8, "precio": 25},
+    1: {"nombre": "Licor1", "origen": "US", "unidades": 10, "precio": 20},
+    2: {"nombre": "Licor2", "origen": "FR", "unidades": 8, "precio": 25},
     # ... Otros licores
 }
+responses = []                                  # Lista compartida para respuestas a clientes
 
-# Puertos liquor
-liquorStoreTCP_address = ("127.0.0.1", 7581)    # TCP
-liquorStoreUDP_address = ("127.0.0.1", 3558)    # UDP
+# PUERTOS USADOS
+liquorStoreTCP_address = ("127.0.0.1", 8000)    # TCP LiquorStore
 
-# Puertos bank
-bankUDP_adress = ("127.0.0.1", 3459)    # UDP
-
-# Lista compartida para respuestas a clientes
-responses = []
+liquorStoreUDP_address = ("127.0.0.1", 3555)    # UDP LiquorStore
+bankUDP_adress = ("127.0.0.1", 3459)            # UDP Bank
 
 class LiquorStore(BaseRequestHandler):
-    def menu(self):
-            self.request.sendall("1. Listar inventario.\r\n".encode())
-            self.request.sendall("2. Comprar un licor.\r\n".encode())
-            self.request.sendall("3. Salir.\r\n".encode())
-
-    def broadcast_string(self, b_msg, skip_socket):
-        for socket in self.server.sockets:
-            if socket != self.request and socket != skip_socket:
-                socket.send(b_msg.encode())
-        print(b_msg)
+    def menu(self, usuariosConectados):
+            mensaje = f"Usuarios conectados: ({usuariosConectados})\n"
+            mensaje += f"\nMEMU PRINCIPAL:\n"
+            mensaje += f"1. Ver licores disponibles.\n"
+            mensaje += f"2. Comprar un licor.\n"
+            mensaje += f"3. Salir.\n"
+            mensaje += f"4. Actualizar menu principal.\n"
+            self.request.send(mensaje.encode())
     
     def procesarCompra(self, liquor_code):
         licor = inventory.get(int(liquor_code))
@@ -57,10 +52,9 @@ class LiquorStore(BaseRequestHandler):
 
     def handle(self):
         self.server.sockets.append(self.request)
-        self.request.send(b"BIENVENIDO A LIQUOR-STORE. Para ver opciones ingrese: help\r\n")
-        self.menu()
-        msg = "\r\n" + "Client joined " + str(self.client_address) + "\r\n"
-        self.broadcast_string(msg, self.request)
+        self.server.usuariosConectados += 1
+        self.request.send(b"\nBIENVENIDO A LIQUOR-STORE.\r\n")
+        self.menu(self.server.usuariosConectados)
         
         # Iniciar hilo para enviar respuestas a los clientes
         response_thread = Thread(target=self.responderCliente)
@@ -72,7 +66,7 @@ class LiquorStore(BaseRequestHandler):
             command = decoded_data[0]
 
             if command == "1":
-                # Imprimir la lista de licores de manera organizada
+                # Imprimir la lista de licores organizada
                 response = "\r\n".join([f"{key}: {value}" for key, value in inventory.items()]) + "\r\n"
                 self.request.sendall(response.encode())
             elif command == "2":
@@ -80,50 +74,67 @@ class LiquorStore(BaseRequestHandler):
                 self.request.sendall("Ingrese el codigo del licor que desea comprar.\r\n".encode())
                 liquor_code = self.request.recv(1024).decode().strip()
                 if liquor_code:
-                    # Hacer una compra
-                    user_credentials = self.procesarCompra(liquor_code)
-                    # Enviar al informacion al banco
-                    self.enviar_a_Banco(user_credentials)
+                    user_credentials = self.procesarCompra(liquor_code) # Hacer una compra
+                    self.enviar_a_Banco(user_credentials)               # Enviar la informacion al banco
             elif command == "3":
                 # Salir
-                msg = "Client left " + str(self.client_address) + "\r\n"
-                self.broadcast_string(msg, self.request)
+                self.server.usuariosConectados -= 1                                 # Decrementar usuario que abandona
                 self.server.sockets.remove(self.request)
                 break
-            elif command == "help":
-                self.menu()
+            elif command == "4":
+                self.menu(self.server.usuariosConectados)
             else:
                 self.request.sendall("Comando invalido.\r\n".encode())
-                self.menu()
+                self.menu(self.server.usuariosConectados)
         self.request.close()
 
-class BankServer(BaseRequestHandler):
+class respBankHandler(BaseRequestHandler):
+
+    def enviar_a_Banco(self, mensaje):
+        # Enviar al banco
+        bank_socket = socket(AF_INET, SOCK_DGRAM)
+        bank_socket.sendto(mensaje.encode(), bankUDP_adress)
+        
     def handle(self):
         data, conn = self.request
-        decoded_data = data.decode()
-        print(decoded_data.upper())
-        if decoded_data == "OK":
+        resp_bank = data.decode()
+        print(resp_bank.upper())
+        if resp_bank == "OK":
             responses.append("Desea confirmar la compra? y/n\r\n")
+            # Recibir la confirmación del cliente a través del socket TCP
+            confirmacion = self.request.recvfrom(1024).decode().strip().lower() # CORREGIR!
+            print(confirmacion)
+            if confirmacion == 'y' or confirmacion == 'n':
+                # Enviar la confirmación al banco a través de UDP
+                self.enviar_a_Banco(confirmacion)
+            else:
+                print("Entrada no válida. Debe ingresar 'y' o 'n'.")
 
-        elif decoded_data == "Saldo insuficiente":
+
+        elif resp_bank == "Saldo insuficiente":
             responses.append("Usted no posee saldo suficiente para hacer esta compra.\r\n")
-
-        elif decoded_data == "Credenciales invalidas":
+        elif resp_bank == "Credenciales invalidas":
             responses.append("Error de autenticacion, intente de nuevo.\r\n")
         else:
             responses.append("Error al procesar respuesta con su banco, intente nuevamente.\r\n")
 
-# Inicializar servidor
-liquor_server1 = ThreadingTCPServer(liquorStoreTCP_address, LiquorStore)
-liquor_server2 = ThreadingUDPServer(liquorStoreUDP_address, BankServer)
+try:
+    # Inicializar servidor TCP
+    liquor_server1 = ThreadingTCPServer(liquorStoreTCP_address, LiquorStore)
+    liquor_server1.usuariosConectados = 0    # Manejar usuarios conectados
+    liquor_server1.sockets = []              # Lista para almacenar los sockets de los clientes
+    liquorStore_TCP = Thread(target=liquor_server1.serve_forever)
+    liquorStore_TCP.start()
+    print(f"LIQUOR-STORE inició en puerto TCP {liquorStoreTCP_address[1]}")
+except Exception as error:
+    print(f"LIQUOR-STORE no pudo iniciarse en puerto TCP {liquorStoreTCP_address[1]}: {error}")
 
-liquorStore_TCP = Thread(target=liquor_server1.serve_forever)
-liquorStore_UDP = Thread(target=liquor_server2.serve_forever)
+try:
+    # Inicializar servidor UDP
+    liquor_server2 = ThreadingUDPServer(liquorStoreUDP_address, respBankHandler)
+    liquorStore_UDP = Thread(target=liquor_server2.serve_forever)
+    liquorStore_UDP.start()
+    print(f"LIQUOR-STORE inició en puerto UDP {liquorStoreUDP_address[1]}")
+except Exception as error:
+    print(f"LIQUOR-STORE no pudo iniciarse en puerto UDP {liquorStoreUDP_address[1]}: {error}")
 
-# Iniciar hilos
-liquorStore_TCP.start()
-liquorStore_UDP.start()
-
-liquor_server1.sockets = []  # Lista para almacenar los sockets de los clientes
-print(f"LIQUOR-STORE TCP server started on port {liquorStoreTCP_address[1]}")
-print(f"LIQUOR-STORE UDP server started on port {liquorStoreUDP_address[1]}")

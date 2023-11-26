@@ -2,7 +2,7 @@ from socketserver import ThreadingUDPServer, BaseRequestHandler
 
 # Datos de servidores
 bank_address = ("127.0.0.1", 3459)              # Dirección y puerto UDP del servidor Bank
-liquorStoreUDP_address = ("127.0.0.1", 3558)     # Dirección y puerto UDP del servidor LiquorStore
+liquorStoreUDP_address = ("127.0.0.1", 3555)     # Dirección y puerto UDP del servidor LiquorStore
 
 class BankServerHandler(BaseRequestHandler):
     accounts = {
@@ -21,28 +21,32 @@ class BankServerHandler(BaseRequestHandler):
                 # Si el usuario tiene saldo suficiente
                 return "OK"
             else:
-                # Si el usuario no tiene saldo suficiente
                 return "Saldo insuficiente"
         else:
-            # Si las credenciales no son válidas
             return "Credenciales invalidas"
         
     def handle(self):
-        data, conn = self.request  # Datos recibidos y socket del cliente
+        data, conn = self.request  # Recibir datos de LIQUOR-STORE
 
-        # Extraer usuario, contraseña y costo de los datos recibidos
+        # Almacenar datos entrantes
         decoded_data = data.strip().decode().split()
-        usuario = decoded_data[0]
-        contraseña = decoded_data[1]
-        costo = int(decoded_data[2])  # Convertir a entero para comparaciones
-        print(f'Usuario: {usuario}, Contraseña: {contraseña}')
-        response = self.verificarSaldo(usuario, contraseña, costo)
-        # Responder a LiquorStore
-        print(response) 
-        conn.sendto(response.encode(), liquorStoreUDP_address)
+        #peticion = decoded_data[0]                                  #Controlar peticiones
+        if len(decoded_data) >= 3:
+            usuario = decoded_data[0]
+            contraseña = decoded_data[1]
+            costo = int(decoded_data[2])                                # Convertir a entero para comparaciones
+            response = self.verificarSaldo(usuario, contraseña, costo)
+            print(response) 
+            conn.sendto(response.encode(), liquorStoreUDP_address)      # Responder a LiquorStore
+        elif len(decoded_data) == 1:
+            confirmacion = decoded_data[0]
+            print(confirmacion)
 
-# Inicializar servidor
-bank_server = ThreadingUDPServer((bank_address), BankServerHandler)
+try:
+    # Inicializar servidor
+    bank_server = ThreadingUDPServer((bank_address), BankServerHandler)
+    print("BANK inició por el puerto UDP: %s" % bank_address[1])
+    bank_server.serve_forever()
+except Exception as error:
+    print(print(f"BANK no pudo iniciarse en puerto UDP {liquorStoreUDP_address[1]}: {error}"))
 
-print("BANK server UDP started on port %s" % bank_address[1])
-bank_server.serve_forever()
