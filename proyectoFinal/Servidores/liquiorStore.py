@@ -11,7 +11,7 @@ inventory = {
 responses = []                                  # Lista compartida para respuestas a clientes
 
 # PUERTOS USADOS
-liquorStoreTCP_address = ("127.0.0.1", 8000)    # TCP LiquorStore
+liquorStoreTCP_address = ("127.0.0.1", 9000)    # TCP LiquorStore
 
 liquorStoreUDP_address = ("127.0.0.1", 3555)    # UDP LiquorStore
 bankUDP_adress = ("127.0.0.1", 3459)            # UDP Bank
@@ -74,8 +74,14 @@ class LiquorStore(BaseRequestHandler):
                 self.request.sendall("Ingrese el codigo del licor que desea comprar.\r\n".encode())
                 liquor_code = self.request.recv(1024).decode().strip()
                 if liquor_code:
-                    user_credentials = self.procesarCompra(liquor_code) # Hacer una compra
-                    self.enviar_a_Banco(user_credentials)               # Enviar la informacion al banco
+                    user_credentials = self.procesarCompra(liquor_code)             # Hacer una compra
+                    self.enviar_a_Banco(user_credentials)                           # Enviar la informacion al banco
+                    confirmacion = self.request.recv(1024).decode().strip().lower() # Esperar al cliente confirmar compra
+                    print(confirmacion)
+                    if confirmacion == 'y' or confirmacion == 'n':
+                        self.enviar_a_Banco(confirmacion)                           # Enviar la confirmación al banco
+                    else:
+                        print("Entrada no válida. Debe ingresar 'y' o 'n'.")
             elif command == "3":
                 # Salir
                 self.server.usuariosConectados -= 1                                 # Decrementar usuario que abandona
@@ -102,15 +108,7 @@ class respBankHandler(BaseRequestHandler):
         if resp_bank == "OK":
             responses.append("Desea confirmar la compra? y/n\r\n")
             # Recibir la confirmación del cliente a través del socket TCP
-            confirmacion = self.request.recvfrom(1024).decode().strip().lower() # CORREGIR!
-            print(confirmacion)
-            if confirmacion == 'y' or confirmacion == 'n':
-                # Enviar la confirmación al banco a través de UDP
-                self.enviar_a_Banco(confirmacion)
-            else:
-                print("Entrada no válida. Debe ingresar 'y' o 'n'.")
-
-
+            #confirmacion = self.request.recvfrom(1024).decode().strip().lower() # CORREGIR!
         elif resp_bank == "Saldo insuficiente":
             responses.append("Usted no posee saldo suficiente para hacer esta compra.\r\n")
         elif resp_bank == "Credenciales invalidas":

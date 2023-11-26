@@ -41,6 +41,7 @@ class BankServerHandler(BaseRequestHandler):
         elif len(decoded_data) == 1:
             confirmacion = decoded_data[0]
             print(confirmacion)
+            print("Compra realizada!")
 
 try:
     # Inicializar servidor
