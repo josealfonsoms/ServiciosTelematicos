@@ -1,13 +1,13 @@
 from socketserver import ThreadingTCPServer, ThreadingUDPServer, BaseRequestHandler
 from threading import Thread
 from socket import *
+import string
 
 # PUERTOS USADOS
 # CLIENTES
-liquorStoreTCP_address = ("0.0.0.0", 8001)    # TCP LiquorStore
-
+liquorStoreTCP_address = ("0.0.0.0", 8000)    # TCP LiquorStore
 # BANK
-liquorStoreUDP_address = ("liquorstore", 3555)    # UDP LiquorStore
+liquorStoreUDP_address = ("liquorstore", 4000)    # UDP LiquorStore
 bankUDP_adress = ("bank", 3459)            # UDP Bank
 
 inventory = {                                   # Datos simulados de inventario de licores
@@ -69,6 +69,16 @@ class LiquorStore(BaseRequestHandler):
         bank_socket = socket(AF_INET, SOCK_DGRAM)
         bank_socket.sendto(mensaje.encode(), bankUDP_adress)
 
+    def	cifradoUDP(self, text,	n):
+	 #	alphabet	"abcdefghijklmnopqrstuvwxyz"	
+        intab	=	string.ascii_lowercase	
+        #	alphabet	shifted	by	n	positions
+        outtab	=	intab[n	% 26:] +	intab[:n	% 26]	 	
+    #	translation	made	b/w	patterns
+        trantab	=	str.maketrans(intab,	outtab)		
+    #	text	is	shifted	to	right	
+        return	text.translate(trantab)
+
     def responderCliente(self):
         while True:
             if responses:
@@ -104,9 +114,10 @@ class LiquorStore(BaseRequestHandler):
                     liquor_amount = int(self.request.recv(1024).decode().strip())
                     if liquor_amount >0:
                         user_credentials = self.procesarCompra(liquor_code,liquor_amount)             # Hacer una compra
-                        self.enviar_a_Banco(user_credentials)                           # Enviar la informacion al banco
+                        user_codificado = self.cifradoUDP(user_credentials, 3)
+                        self.enviar_a_Banco(user_codificado)                           # Enviar la informacion al banco
                         confirmacion = self.request.recv(1024).decode().strip().lower() # Esperar al cliente confirmar compra
-                    print(confirmacion)
+                        print(confirmacion)
                     if confirmacion == 'y' or confirmacion == 'n':
                         # Realizar la compra y enviar confirmación al banco
                         response = self.realizarCompra(inventory.get(int(liquor_code)), liquor_amount)
