@@ -140,8 +140,6 @@ Lanzar contenedores en mi-red
 	docker run --network mi-red --name c1 -d name_imagen
 		docker run --network mi-red --name liquorstore -d liquorstore
 
-
-	
 Entrar al contenedor
 	docker exec -it nombre_del_contenedor /bin/bash
 
