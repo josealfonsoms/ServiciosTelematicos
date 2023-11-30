@@ -4,8 +4,8 @@ import threading
 # Datos de servidores
 bankTCP_address = ("0.0.0.0", 9000)               # Dirección y puerto TCP del servidor Bank
 
-bankUDP_address = ("127.0.0.1", 3459)              # Dirección y puerto UDP del servidor Bank
-liquorStoreUDP_address = ("127.0.0.1", 3555)       # Dirección y puerto UDP del servidor LiquorStore
+bankUDP_address = ("192.168.46.3", 3459)              # Dirección y puerto UDP del servidor Bank
+liquorStoreUDP_address = ("192.168.46.2", 3555)       # Dirección y puerto UDP del servidor LiquorStore
 
 class BankUDPHandler(BaseRequestHandler):
     accounts = {

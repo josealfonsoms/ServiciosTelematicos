@@ -4,11 +4,11 @@ from socket import *
 
 # PUERTOS USADOS
 # CLIENTES
-liquorStoreTCP_address = ("127.0.0.1", 8002)    # TCP LiquorStore
+liquorStoreTCP_address = ("0.0.0.0", 8001)    # TCP LiquorStore
 
 # BANK
-liquorStoreUDP_address = ("127.0.0.1", 3554)    # UDP LiquorStore
-bankUDP_adress = ("127.0.0.1", 3459)            # UDP Bank
+liquorStoreUDP_address = ("192.168.46.2", 3555)    # UDP LiquorStore
+bankUDP_adress = ("192.168.46.3", 3459)            # UDP Bank
 
 inventory = {                                   # Datos simulados de inventario de licores
     1: {"nombre": "Aguardiente", "origen": "CO", "unidades": 10, "precio": 10},
@@ -41,6 +41,7 @@ class LiquorStore(BaseRequestHandler):
     def procesarCompra(self, liquor_code,quantity):
         licor = inventory.get(int(liquor_code))
         if licor:
+
             self.request.sendall(b"Estas intentado realizar una compra, por favor ingresar en tu banco.\r\n")
             self.request.sendall(b"Numero de cuenta:")
             username = self.request.recv(1024).decode().strip()
@@ -52,6 +53,7 @@ class LiquorStore(BaseRequestHandler):
         
     def realizarCompra(self, licor, quantity):
         costo = licor["precio"] * quantity
+
         # Verificar si hay suficientes unidades disponibles
         if licor["unidades"] >= quantity:
             # Realizar la compra y decrementar unidades
@@ -59,6 +61,7 @@ class LiquorStore(BaseRequestHandler):
             response = f"Compra exitosa. Se han comprado {quantity} unidades de {licor['nombre']} por un total de {costo}.\n"
         else:
             response = f"No hay suficientes unidades disponibles de {licor['nombre']} para la cantidad solicitada.\n"
+
         return response
         
     def enviar_a_Banco(self, mensaje):
@@ -88,6 +91,7 @@ class LiquorStore(BaseRequestHandler):
             decoded_data = data.decode().split()
             command = decoded_data[0]
 
+
             if command == "1":
                 # Imprimir la lista de licores organizada
                 #response = "\r\n".join([f"{key}: {value}" for key, value in inventory.items()]) + "\r\n"
@@ -100,7 +104,7 @@ class LiquorStore(BaseRequestHandler):
                 if liquor_code:
                     self.request.sendall("Ingrese la cantidad de licor que desea comprar.\r\n".encode())
                     liquor_amount = int(self.request.recv(1024).decode().strip())
-                    if liquor_amount:
+                    if liquor_amount >0:
                         user_credentials = self.procesarCompra(liquor_code,liquor_amount)             # Hacer una compra
                         self.enviar_a_Banco(user_credentials)                           # Enviar la informacion al banco
                         confirmacion = self.request.recv(1024).decode().strip().lower() # Esperar al cliente confirmar compra
