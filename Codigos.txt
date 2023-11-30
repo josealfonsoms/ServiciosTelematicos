@@ -1,0 +1,152 @@
+Ruta actual
+	pwd
+	whoami
+
+
+Agregar IP, Mascara, Gateway, DNS
+	ip a a IP/MASK dev INTERFAZ(eth0)
+	ifconfig eth0 <nueva_direccion_ip> netmask <nueva_mascara_de_red>
+	
+	Gateway
+	route add default gw 192.168.1.254 <interfaz>
+	
+	DNS
+	echo "nameserver <dns_primario>" | sudo tee /etc/resolv.conf
+	echo "nameserver <dns_secundario>" | sudo tee -a /etc/resolv.conf
+
+Eliminar ip
+	ip a del IP/MASK dev INTERFAZ(eth0)
+
+
+Establecer configuracion DHCP
+	dhclient -r <Interfaz(eth0)>
+
+	ifconfig <eth0> down
+	ifconfig <eth0> up
+
+Eliminar un proceso
+	consultar procesos
+	PID ps -aux
+	
+	eliminar proceso
+	kill -9 PIDAEliminar
+
+Conexiones activas
+	ss -lt
+	ss -ltn (Puertos numericos)
+	
+Crear conexion
+	Servidor
+	nc -l -p PUERTO(7654)
+	
+	nc IP(Servidor) PUERTO
+
+Crear fichero (o Entrar)
+	nano MIPROGRAMA
+
+Consultar permisos
+	ls -l MIPROGRAMA
+
+Cambiar permisos al fichero
+	chmod 755 MIPROGRAMA
+
+Ejecutar programa
+	./MIPROGRAMA
+	
+Mostrar la IP en terminal
+	ifconfig eth0 | awk '/inet / {print $2}'
+
+-------------------------------------------------------------------------------------------
+DOCKER
+-------------------------------------------------------------------------------------------
+
+Descargar imagen de alpine
+	docker pull alpine
+
+Eliminar imagenes (una o todas)
+	docker rmi IMAGE_ID
+	docker rmi $(docker images -q)
+
+Nav
+	docker image ls
+	docker container ls -a
+
+Dockerfile	(Construir imagen para lanzar contenedores)
+	docker build -t NOMBREDEIMAGEN .
+
+contenedor
+	docker run NAMES (Lanzar)
+	docker stop NAMES (detener)
+	docker start NAMES (Empezar)
+	docker rm NAMES (eliminar)
+
+Crear contenedor un ping sobre imagen de alpine
+	docker run alpine ping -c 2 8.8.8.8
+
+Direccionar a la terminal
+	docker start NAMES -a
+	docker attach NAMES (Entrar a contenedor activo)
+
+Crear contenedor interactivo
+	docker run --name CONTENEDOR -it alpine sh
+
+
+Eliminar todos los contenedores
+	docker stop $(docker ps -aq)
+	docker rm $(docker ps -aq)
+
+Conexiones
+	docker network ls
+	docker network inspect [network_name]
+
+	
+Crear red Bridge
+	docker network create --subnet=192.168.46.0/24 mi-red-bridge
+
+Conectar contenedores a la red
+	docker run --network mi-red-bridge --name c1 -d name_imagen
+	docker run --network mi-red-bridge --name c2 -d name_imagen
+	docker run --network mi-red-bridge --name c3 -d name_imagen
+Verificar la red
+	docker network inspect mi-red-bridge
+
+
+-------------------------------------------------------------------------------------------
+HTTP
+-------------------------------------------------------------------------------------------
+
+
+Servidor:
+
+Servir pagina web
+	echo -e "HTTP/1.1 200 OK\r\n\r\nHOLA" | nc -l -p 80 -q 1 -N
+
+nc 
+
+-------------------------------------------------------------------------------------------
+PRACTICA FINAL
+-------------------------------------------------------------------------------------------
+	
+Crear contenedor
+	docker run --name liquorstore -d liquorstore
+
+Lanzar el contenedor abriendo mapeando los puertos usados P_host:P_contenedor
+	docker run --name liquorstore -p 8001:8001 -p 4000:3555/udp -p 5000:3459/udp liquorstore
+	docker run --name bank -p 9000:9000 -p 3459:3459/udp -p 3555:3555/udp bank
+	
+	docker run --name bank --ip 192.168.46.X -p 7000:7000 -p 3459:3459/udp -p 3555:3555/udp bank
+	
+Lanzar contenedores en mi-red
+	docker run --network mi-red --name c1 -d name_imagen
+
+
+	
+Entrar al contenedor
+	docker exec -it nombre_del_contenedor /bin/bash
+
+
+
+	
+
+
+
