@@ -7,8 +7,8 @@ from socket import *
 liquorStoreTCP_address = ("0.0.0.0", 8001)    # TCP LiquorStore
 
 # BANK
-liquorStoreUDP_address = ("192.168.46.2", 3555)    # UDP LiquorStore
-bankUDP_adress = ("192.168.46.3", 3459)            # UDP Bank
+liquorStoreUDP_address = ("liquorstore", 3555)    # UDP LiquorStore
+bankUDP_adress = ("bank", 3459)            # UDP Bank
 
 inventory = {                                   # Datos simulados de inventario de licores
     1: {"nombre": "Aguardiente", "origen": "CO", "unidades": 10, "precio": 10},
