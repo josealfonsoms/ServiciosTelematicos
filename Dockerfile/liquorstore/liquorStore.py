@@ -28,7 +28,7 @@ class LiquorStore(BaseRequestHandler):
             mensaje += f"4. Actualizar menu principal.\n"
             self.request.send(mensaje.encode())
 
-    def obtener_listado_licores(self):
+    def obtener_inventario(self):
         response = "\nListado de Licores:\n"
         for codigo, informacion in inventory.items():
             response += f"\nCódigo: {codigo} "
@@ -93,9 +93,7 @@ class LiquorStore(BaseRequestHandler):
 
 
             if command == "1":
-                # Imprimir la lista de licores organizada
-                #response = "\r\n".join([f"{key}: {value}" for key, value in inventory.items()]) + "\r\n"
-                message = self.obtener_listado_licores()
+                message = self.obtener_inventario()
                 self.request.sendall(message.encode())
             elif command == "2":
                 # Comprar

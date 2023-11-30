@@ -9,7 +9,7 @@ liquorStoreUDP_address = ("192.168.46.2", 3555)       # Dirección y puerto UDP 
 
 class BankUDPHandler(BaseRequestHandler):
     accounts = {
-        "1234": {"nombre": "usuario1", "contraseña": "pass1", "saldo": 100},
+        "1234": {"nombre": "Alexander Leal", "contraseña": "pass1", "saldo": 100},
         "5678": {"nombre": "usuario2", "contraseña": "pass2", "saldo": 100},
         "9012": {"nombre": "usuario3", "contraseña": "pass3", "saldo": 100},
     }
@@ -22,12 +22,12 @@ class BankUDPHandler(BaseRequestHandler):
             print(f"Monto a descontar para la compra: {costo}")
             if saldo_disponible >= costo:
                 # Si el usuario tiene saldo suficiente
-                self.accounts[usuario]["saldo"] -= costo  # Deduct the cost from the user's balance
+                self.accounts[usuario]["saldo"] -= costo  # Descuenta el saldo
                 return "OK"
             else:
-                return "Saldo insuficiente"
+                return "Saldo insuficiente."
         else:
-            return "Credenciales invalidas"
+            return "Credenciales invalidas."
         
     def handle(self):
         data, conn = self.request  # Recibir datos de LIQUOR-STORE
@@ -62,7 +62,12 @@ class BankTCPHandler(BaseRequestHandler):
 
             while True:
                 # Display menu options
-                menu = "1. Consultar Saldo\n2.Consignar Saldo\n3. Retirar\n4. Salir\nSeleccione una opción (1/2/3/4): \r\n"
+                menu = "\nMENU PRINCIPAL\n"
+                menu += "1. Consultar Saldo\n"
+                menu += "2. Consignar Saldo\n"
+                menu += "3. Retirar\n"
+                menu += "4. Salir\n"
+                menu += "Seleccione una opción (1/2/3/4): \r\n"
                 self.request.sendall(menu.encode())
 
                 # Receive user choice
@@ -120,9 +125,7 @@ class BankTCPHandler(BaseRequestHandler):
                     break
                 else:
                     message = "Opción no válida"
-
                 self.request.sendall(message.encode())
-
         except Exception as e:
             print(f"Error during handling: {e}")
 

@@ -138,6 +138,7 @@ Lanzar el contenedor abriendo mapeando los puertos usados P_host:P_contenedor
 	
 Lanzar contenedores en mi-red
 	docker run --network mi-red --name c1 -d name_imagen
+		docker run --network mi-red --name liquorstore -d liquorstore
 
 
 	
